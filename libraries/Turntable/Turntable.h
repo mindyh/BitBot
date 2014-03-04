@@ -10,9 +10,8 @@ class Turntable
     void TurnCW(int val);
     void TurnCCW(int val);
     void Stop();
-    void BumperPressed();
-    int GetCurrentPosition();
-    //bool IsAlignedWithWall(int side);
+    bool IsBumperPressed();
+    int GetCurrentSector();
   private:
     int _enbl;
     int _dir;

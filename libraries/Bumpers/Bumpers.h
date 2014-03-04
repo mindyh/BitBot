@@ -7,11 +7,12 @@ class Bumpers
 {
   public:
     Bumpers(int fl, int bl, int fr, int br);
-    bool IsFrontLeftBumperPressed();
-    bool IsBackLeftBumperPressed();
-    bool IsFrontRightBumperPressed();
-    bool IsBackRightBumperPressed();
-    bool IsAlignedWithWall(int side);
+    bool IsFrontLeftPressed();
+    bool IsBackLeftPressed();
+    bool IsFrontRightPressed();
+    bool IsBackRightPressed();
+    bool IsBackPressed();
+    bool IsFrontPressed();
   private:
     int _fl;
     int _bl;

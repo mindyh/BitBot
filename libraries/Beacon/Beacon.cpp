@@ -11,8 +11,8 @@ bool Beacon::IsFacingBeacon() {
 }
 
 void Beacon::Clear() {
-  minVal = 0;
-  maxVal = 0;
+  minVal = 500;
+  maxVal = 500;
 }
 
 void Beacon::Update() {

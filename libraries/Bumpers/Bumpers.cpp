@@ -17,29 +17,37 @@ Bumpers::Bumpers(int fl,
   pinMode(_br, INPUT); 
 }
 
-bool Bumpers::IsFrontLeftBumperPressed() {
+bool Bumpers::IsFrontLeftPressed() {
     return (digitalRead(_fl) == HIGH);
 }
 
-bool Bumpers::IsBackLeftBumperPressed() {
+bool Bumpers::IsBackLeftPressed() {
     return (digitalRead(_bl) == HIGH);
 }
 
-bool Bumpers::IsFrontRightBumperPressed() {
+bool Bumpers::IsFrontRightPressed() {
     return (digitalRead(_fr) == HIGH);
 }
 
-bool Bumpers::IsBackRightBumperPressed() {
+bool Bumpers::IsBackRightPressed() {
     return (digitalRead(_br) == HIGH);
 }
 
-bool Bumpers::IsAlignedWithWall(int side) {
-    switch(side) {
-      case FRONT: 
-        return (IsFrontRightBumperPressed() &&
-                IsFrontLeftBumperPressed());
-      case BACK:
-        return (IsBackRightBumperPressed() &&
-                IsBackLeftBumperPressed());
-    }
+bool Bumpers::IsFrontPressed() {
+    return (IsFrontLeftPressed() || IsFrontRightPressed());
 }
+
+bool Bumpers::IsBackPressed() {
+    return (IsBackLeftPressed() || IsBackRightPressed());
+}
+
+// bool Bumpers::IsAlignedWithWall(int side) {
+//     switch(side) {
+//       case FRONT: 
+//         return (IsFrontRightBumperPressed() &&
+//                 IsFrontLeftBumperPressed());
+//       case BACK:
+//         return (IsBackRightBumperPressed() &&
+//                 IsBackLeftBumperPressed());
+//     }
+// }

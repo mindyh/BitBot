@@ -13,24 +13,24 @@ Turntable::Turntable( int enbl, int dir)
 }
 
 /*-----Turntable Functions -----*/
-void TurnCW(int val) {
+void Turntable::TurnCW(int val) {
     digitalWrite(_dir, LOW);
-    analogWrite(TURNTABLE_ENABLE_PIN, val);
+    analogWrite(_enbl, val);
 }
 
-void TurnCCW(int val) {
+void Turntable::TurnCCW(int val) {
     digitalWrite(_dir, HIGH);
     analogWrite(_enbl, val);
 }
 
-void Stop() {
+void Turntable::Stop() {
     analogWrite(_enbl, 0);
 }
 
-void IsBumperPressed() {
+bool Turntable::IsBumperPressed() {
 
 }
     
-int GetCurrentSector(){
+int Turntable::GetCurrentSector(){
     
 }
