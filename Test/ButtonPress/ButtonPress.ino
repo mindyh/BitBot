@@ -9,7 +9,7 @@
 #include <Timers.h>
  
  /*---------------- Module Defines ---------------------------*/
-#define SERVO_PIN         9
+#define SERVO_PIN         8
 
 #define HEARTBEAT_LED  13
 #define ONE_SEC   1000

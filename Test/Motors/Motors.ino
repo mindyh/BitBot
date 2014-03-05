@@ -9,8 +9,8 @@
  /*---------------- Module Defines ---------------------------*/
 #define MOTOR_1_DIR_PIN         4
 #define MOTOR_1_ENABLE_PIN      5
-#define MOTOR_2_DIR_PIN         7
 #define MOTOR_2_ENABLE_PIN      6
+#define MOTOR_2_DIR_PIN         7
 
 #define HEARTBEAT_LED  13
 #define ONE_SEC   1000
@@ -64,16 +64,16 @@ void RespondToKey(void) {
 }
 
 void goForward(int val) {
-    digitalWrite(MOTOR_1_DIR_PIN, HIGH);
-    digitalWrite(MOTOR_2_DIR_PIN, LOW);
+    digitalWrite(MOTOR_1_DIR_PIN, LOW);
+    digitalWrite(MOTOR_2_DIR_PIN, HIGH);
 
     analogWrite(MOTOR_1_ENABLE_PIN, val);
     analogWrite(MOTOR_2_ENABLE_PIN, val);
 }
 
 void goBackward(int val){
-    digitalWrite(MOTOR_1_DIR_PIN, LOW);
-    digitalWrite(MOTOR_2_DIR_PIN, HIGH);
+    digitalWrite(MOTOR_1_DIR_PIN, HIGH);
+    digitalWrite(MOTOR_2_DIR_PIN, LOW);
 
     analogWrite(MOTOR_1_ENABLE_PIN, val);
     analogWrite(MOTOR_2_ENABLE_PIN, val);

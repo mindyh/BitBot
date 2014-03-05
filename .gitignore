@@ -20,3 +20,6 @@
 
 # folders
 *Notes*
+
+# Temp files
+*.tmp

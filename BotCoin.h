@@ -10,7 +10,6 @@
 #include "Arduino.h"
 
 // Digital Pins
-
 #define TURNTABLE_DIR_PIN       2
 #define TURNTABLE_ENABLE_PIN    3  
 #define MOTOR_2_DIR_PIN         4
@@ -38,6 +37,8 @@
 #define BUTTON_PRESS_TIMER      5
 #define BRAKING_TIMER           6
 #define TRAVELLING_TIMER        7
+#define LINE_TRACKING_TIMER     8
+#define ALIGNING_TIMER          9
 
 // Values
 #define ONE_SEC               1000
@@ -48,15 +49,18 @@
 #define BRAKING_INTERVAL      ONE_SEC/4
 #define TRAVELLING_TIME       2.5*ONE_SEC 
 #define SPIN_RATE             150
+#define SLOW_DRIVE_RATE       150
 #define DRIVE_RATE            180
+#define LINE_TRACKING_TIME    2*ONE_SEC
+#define ALIGNING_TIME         ONE_SEC
+#define DYNAMIC_BRAKE_TIME    ONE_SEC/2
 
-
-// direction to move
 enum Direction {
     FORWARD,
     BACKWARD,
     SPIN_LEFT,
-    SPIN_RIGHT
+    SPIN_RIGHT,
+    SPIN
 };
 
 // side of the robot
@@ -70,7 +74,9 @@ enum State {
     WAITING_TO_START,
     SEEKING_SERVER,
     TRAVELLING_TO_SERVER,
-    ALIGNING_WITH_WALL,
+    ALIGNING_WITH_EXCHANGE_WALL,
+    ALIGNING_WITH_SERVER_WALL,
+    GOING_TO_SERVER_WALL,
     TRACKING_LINE,
     BUTTON_PRESSING,
     SEEKING_EXCHANGE,
@@ -78,13 +84,15 @@ enum State {
     DISPENSING,
     WAITING_TO_END,
     BACKING_UP,
-    BRAKING
+    BRAKING,
+    SEEKING_LINE,
+    ALIGNING,
+    FOLLOWING_LINE,
+    ALIGNING_WITH_SERVER
 };
 
 enum LineTrackingState {
-    SEEKING_LINE,
-    ALIGNING,
-    FOLLOWING_LINE
+
 };
 
 enum LineTurningDir {
