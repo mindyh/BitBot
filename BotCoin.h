@@ -51,6 +51,7 @@
 #define SPIN_RATE             150
 #define SLOW_DRIVE_RATE       150
 #define DRIVE_RATE            180
+#define TURNTABLE_RATE        240
 #define LINE_TRACKING_TIME    2*ONE_SEC
 #define ALIGNING_TIME         ONE_SEC
 #define DYNAMIC_BRAKE_TIME    ONE_SEC/2
