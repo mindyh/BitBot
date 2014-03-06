@@ -61,8 +61,8 @@ void setup()
 
 void loop()
 {
-    //static State currState = WAITING_TO_START;
-    static State currState = ALIGNING_WITH_EXCHANGE_WALL;
+    static State currState = WAITING_TO_START;
+//    static State currState = ALIGNING_WITH_EXCHANGE_WALL;
     
     static State returnToState;
 
@@ -76,11 +76,12 @@ void loop()
     exchangeBeacon.Update();
     serverBeacon.Update();
 
-    // if(TMRArd_IsTimerExpired(ENDGAME_TIMER)) {
-    //     currState = WAITING_TO_END;
-    //     turntable.Stop();
-    //     drivetrain.Stop();
-    // }
+    if(TMRArd_IsTimerExpired(ENDGAME_TIMER)) {
+        currState = WAITING_TO_END;
+        turntable.Stop();
+        drivetrain.Stop();
+        presser.Rest();
+    }
 
     if (TMRArd_IsTimerExpired(CLEAR_BEACON_TIMER))
     {
@@ -100,29 +101,21 @@ void loop()
         }
         break;
     case SEEKING_SERVER:
-        if (serverBeacon.IsFacingBeacon())
+        if (serverBeacon.IsFacingBeacon() || TMRArd_IsTimerExpired(SEEKING_TIMER))
         {
+            TMRArd_StopTimer(SEEKING_TIMER);
+            TMRArd_ClearTimerExpired(SEEKING_TIMER);
             presser.Rest();
 
-            //if(millis() - time > DYNAMIC_BRAKE_TIME) {
-                Brake(SPIN);
-                returnToState = TRAVELLING_TO_SERVER;
-                currState = BRAKING;
-//            } else {
-//                currState = TRAVELLING_TO_SERVER;
-//                Transition(TRAVELLING_TO_SERVER);
-//            }
+            Brake(SPIN);
+            returnToState = TRAVELLING_TO_SERVER;
+            currState = BRAKING;
         }
         break;
-
+    case INITIAL_ALIGNING_WITH_EXCHANGE:
+        break;
     case TRAVELLING_TO_SERVER:
-        if (lineSensors.IsFrontOverLine() && bumpers.IsFrontPressed())
-        {
-            drivetrain.Stop();
-            currState = BUTTON_PRESSING;
-            TMRArd_InitTimer(BUTTON_PRESS_TIMER, BUTTON_PRESS_INTERVAL);
-        }
-        else if (lineSensors.IsCenterOverLine())
+        if (lineSensors.IsCenterOverLine())
         {
             if(millis() - time > DYNAMIC_BRAKE_TIME) {
                 currState = BRAKING;
@@ -158,73 +151,12 @@ void loop()
                 currState = GOING_TO_SERVER_WALL;
                 Transition(GOING_TO_SERVER_WALL);
             }
+        } else if (bumpers.IsFrontPressed()) {
+            currState = BACKING_UP;
+            returnToState = TRAVELLING_TO_SERVER;
+            Backup();
         }
         break;
-        
-
-//    case SEEKING_LINE:
-//        if (bumpers.IsFrontPressed() && serverBeacon.IsFacingBeacon())
-//        {
-//            currState = ALIGNING_WITH_WALL;
-//            turntable.TurnCW(200);
-//            drivetrain.GoForward(SLOW_DRIVE_RATE);
-////            TMRArd_StopTimer(LINE_TRACKING_TIMER);
-//            TMRArd_InitTimer(ALIGNING_TIMER, ALIGNING_TIME);
-//        } else if (lineSensors.IsCenterOverLine()) {
-//            SwitchSpin(true);
-//            currState = ALIGNING;
-////            TMRArd_InitTimer(LINE_TRACKING_TIMER, LINE_TRACKING_TIME); 
-//        } else if (TMRArd_IsTimerExpired(TRAVELLING_TIMER)) {
-//            currState = SEEKING_SERVER;
-//            SwitchSpin(true);
-//            TMRArd_ClearTimerExpired(TRAVELLING_TIMER);
-//        } 
-//        else {
-//            //drivetrain.GoBackward(DRIVE_RATE);
-//            if(!TMRArd_IsTimerActive) 
-//              TMRArd_InitTimer(TRAVELLING_TIMER, TRAVELLING_TIME);
-//        }
-//        break;
-//        
-//    case ALIGNING:
-//        if (bumpers.IsFrontPressed() && serverBeacon.IsFacingBeacon())
-//        {
-//            currState = ALIGNING_WITH_WALL;
-//            turntable.TurnCW(200);
-//            drivetrain.GoForward(SLOW_DRIVE_RATE);
-////            TMRArd_StopTimer(LINE_TRACKING_TIMER); 
-//            TMRArd_InitTimer(ALIGNING_TIMER, ALIGNING_TIME);
-//        } else if ((lineSensors.IsFrontOverLine() || lineSensors.IsCenterOverLine()) && serverBeacon.IsFacingBeacon()) {
-//            drivetrain.GoForward(DRIVE_RATE);
-//            currState = FOLLOWING_LINE;
-//            //TMRArd_InitTimer(LINE_TRACKING_TIMER, LINE_TRACKING_TIME);
-//        } else if (!lineSensors.IsCenterOverLine()){
-//            SwitchSpin(true);
-//            currState = SEEKING_LINE;
-//        } else if (!serverBeacon.IsFacingBeacon()) {
-//            currState = SEEKING_SERVER;
-//        }
-//        break;
-//        
-//    case FOLLOWING_LINE:
-//        if (bumpers.IsFrontPressed() && serverBeacon.IsFacingBeacon())
-//        {
-//            currState = ALIGNING_WITH_WALL;
-//            turntable.TurnCW(200);
-//            drivetrain.GoForward(SLOW_DRIVE_RATE);
-////            TMRArd_StopTimer(LINE_TRACKING_TIMER); 
-//            TMRArd_InitTimer(ALIGNING_TIMER, ALIGNING_TIME);
-//        } else if (!serverBeacon.IsFacingBeacon())
-//        {
-//            SwitchSpin(true);
-//            currState = SEEKING_SERVER;
-//        } else if(!lineSensors.IsCenterOverLine()) {
-//          SwitchSpin(true);
-//          currState = SEEKING_LINE;
-//        } else if(!lineSensors.IsFrontOverLine() && lineSensors.IsCenterOverLine()) {
-//            currState = SEEKING_LINE;
-//        } 
-//        break;
 
     case BRAKING:
         if(TMRArd_IsTimerExpired(BRAKING_TIMER)) {
@@ -239,6 +171,7 @@ void loop()
         if (TMRArd_IsTimerExpired(TRAVELLING_TIMER))
         {
             TMRArd_ClearTimerExpired(TRAVELLING_TIMER);
+
             currState = returnToState;
             Transition(returnToState);
         }
@@ -256,8 +189,12 @@ void loop()
           drivetrain.GoForward(DRIVE_RATE);
           currState = ALIGNING_WITH_SERVER_WALL;
           TMRArd_InitTimer(ALIGNING_TIMER, ALIGNING_TIME);
+        } else if(!serverBeacon.IsFacingBeacon()) {
+            currState = ALIGNING_WITH_SERVER;
+            Transition(ALIGNING_WITH_SERVER);
         }
         break;
+
     case ALIGNING_WITH_SERVER_WALL:
         if (TMRArd_IsTimerExpired(ALIGNING_TIMER))
         {   
@@ -276,9 +213,8 @@ void loop()
             numPresses = 0;
             
             currState = BACKING_UP;
+            Backup();
             returnToState = SEEKING_EXCHANGE;
-            TMRArd_InitTimer(TRAVELLING_TIMER, TRAVELLING_TIME/2);
-            drivetrain.GoBackward(DRIVE_RATE);
         }
         else
         {
@@ -302,13 +238,19 @@ void loop()
         break;
         
     case TRAVELLING_TO_EXCHANGE:
-        if (bumpers.IsBackPressed() || TMRArd_IsTimerExpired(TRAVELLING_TIMER))
-        {
+        if (!exchangeBeacon.IsFacingBeacon()) {
+            returnToState = SEEKING_EXCHANGE;
+            TMRArd_StopTimer(TRAVELLING_TIMER);
+            TMRArd_ClearTimerExpired(TRAVELLING_TIMER);
+            currState = BACKING_UP;
+             TMRArd_InitTimer(BACKING_UP_TIMER, ONE_SEC*2);
+              drivetrain.GoBackward(DRIVE_RATE);
+        } else if (bumpers.IsBackPressed() || TMRArd_IsTimerExpired(TRAVELLING_TIMER)) {
             drivetrain.GoBackward(DRIVE_RATE);
             TMRArd_InitTimer(ALIGNING_TIMER, ALIGNING_TIME);
             currState = ALIGNING_WITH_EXCHANGE_WALL;
             TMRArd_ClearTimerExpired(TRAVELLING_TIMER);
-        }
+        } 
         break;
         
     case ALIGNING_WITH_EXCHANGE_WALL:
@@ -332,16 +274,12 @@ void loop()
               currState = WAITING_TO_END;
               TMRArd_ClearTimerExpired(DISPENSER_TIMER);
             } else {
-//               if(turntable.GetLastDir() == CCW) {
-//                 turntable.TurnCCW(TURNTABLE_RATE);
-//                 presser.Press();
-//               }
-//               else {
-//                 presser.Rest();
-//                 turntable.TurnCW(TURNTABLE_RATE);
-//               }
-                presser.Rest();
-                turntable.TurnCCW(TURNTABLE_RATE);
+               if(turntable.GetLastDir() == CCW) {
+                 turntable.TurnCCW(TURNTABLE_RATE);
+               }
+               else {
+                 turntable.TurnCW(TURNTABLE_RATE);
+               }
                 TMRArd_InitTimer(DISPENSER_TIMER, 5 * ONE_SEC);
                 numTurns++;
             }
@@ -355,6 +293,11 @@ void loop()
 }
 
 /*--------Module Functions -------------*/
+void Backup() {
+    TMRArd_InitTimer(BACKING_UP_TIMER, ONE_SEC*1.5);
+    drivetrain.GoBackward(DRIVE_RATE);
+}
+
 void Brake(Direction dirToBrake)
 {
     switch (dirToBrake)
@@ -393,6 +336,7 @@ void Transition(State state)
         time = millis();
         break;
     case SEEKING_SERVER:
+        TMRArd_InitTimer(SEEKING_TIMER, SEEKING_TIME);
         SwitchSpin(true);
         time = millis();
         break;
@@ -417,7 +361,7 @@ void Transition(State state)
         break;
     case TRAVELLING_TO_EXCHANGE:   
         drivetrain.GoBackward(DRIVE_RATE);
-        TMRArd_InitTimer(TRAVELLING_TIMER, TRAVELLING_TIME*2);        
+        TMRArd_InitTimer(TRAVELLING_TIMER, TRAVELLING_TIME*4);        
         break;
     default: break;
     }

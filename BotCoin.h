@@ -39,6 +39,8 @@
 #define TRAVELLING_TIMER        7
 #define LINE_TRACKING_TIMER     8
 #define ALIGNING_TIMER          9
+#define SEEKING_TIMER           10
+#define BACKING_UP_TIMER        11
 
 // Values
 #define ONE_SEC               1000
@@ -53,8 +55,9 @@
 #define DRIVE_RATE            180
 #define TURNTABLE_RATE        240
 #define LINE_TRACKING_TIME    2*ONE_SEC
-#define ALIGNING_TIME         ONE_SEC
+#define ALIGNING_TIME         ONE_SEC*2
 #define DYNAMIC_BRAKE_TIME    ONE_SEC/2
+#define SEEKING_TIME          4*ONE_SEC
 
 enum Direction {
     FORWARD,
@@ -89,7 +92,8 @@ enum State {
     SEEKING_LINE,
     ALIGNING,
     FOLLOWING_LINE,
-    ALIGNING_WITH_SERVER
+    ALIGNING_WITH_SERVER,
+    INITIAL_ALIGNING_WITH_EXCHANGE
 };
 
 enum LineTrackingState {
