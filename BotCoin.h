@@ -67,42 +67,24 @@ enum Direction {
     SPIN
 };
 
-// side of the robot
-enum Side {
-    FRONT,
-    BACK
-};
-
 // states
 enum State {
     WAITING_TO_START,
     SEEKING_SERVER,
+    SEEKING_EXCHANGE_2,
     TRAVELLING_TO_SERVER,
-    ALIGNING_WITH_EXCHANGE_WALL,
+    ALIGNING_WITH_SERVER,
     ALIGNING_WITH_SERVER_WALL,
     GOING_TO_SERVER_WALL,
-    TRACKING_LINE,
     BUTTON_PRESSING,
     SEEKING_EXCHANGE,
+    SEEKING_SERVER_2,
     TRAVELLING_TO_EXCHANGE,
+    ALIGNING_WITH_EXCHANGE_WALL,
     DISPENSING,
     WAITING_TO_END,
     BACKING_UP,
-    BRAKING,
-    SEEKING_LINE,
-    ALIGNING,
-    FOLLOWING_LINE,
-    ALIGNING_WITH_SERVER,
-    INITIAL_ALIGNING_WITH_EXCHANGE
-};
-
-enum LineTrackingState {
-
-};
-
-enum LineTurningDir {
-    LEFT,
-    RIGHT
+    BRAKING
 };
 
 enum Bumper {

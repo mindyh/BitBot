@@ -28,7 +28,8 @@ ButtonPresser presser(BUTTON_PRESSER_PIN, myservo);
 
 Direction switchSpinDir = SPIN_LEFT;
 static unsigned long time = 0;
-
+static boolean isSeekingLine = false;
+    
 /*---- Main Program ---*/
 void setup()
 {
@@ -61,7 +62,6 @@ void loop()
     static State currState = WAITING_TO_START;
 
     static State returnToState;
-    static boolean isSeekingLine = false;
 
     // Always do
     if (TMRArd_IsTimerExpired(HEARTBEAT_TIMER))
@@ -134,12 +134,12 @@ void loop()
         {
             TMRArd_ClearTimerExpired(SEEKING_TIMER);
 
-            currState = ALIGNING_WITH_EXCHANGE_2;
-            Transition(ALIGNING_WITH_EXCHANGE_2);
+            currState = SEEKING_EXCHANGE_2;
+            Transition(SEEKING_EXCHANGE_2);
         }
         break;
 
-    case ALIGNING_WITH_EXCHANGE_2:
+    case SEEKING_EXCHANGE_2:
         // found exchange, go towards it and resume searching for server
         if(exchangeBeacon.IsFacingBeacon()) 
         {
