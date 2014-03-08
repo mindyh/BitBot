@@ -93,6 +93,11 @@ enum Bumper {
     BL,
     BR
 };
+
+enum SideOfServer {
+    LEFT,
+    RIGHT
+}
   
 
 #endif
