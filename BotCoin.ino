@@ -157,7 +157,6 @@ void loop()
         break;
 
     case SEEKING_RIGHT:
-        presser.Press();
         if(TMRArd_IsTimerExpired(SEEKING_TIMER)) {
             TMRArd_ClearTimerExpired(SEEKING_TIMER);
             currState = TRAVELLING_TO_SERVER;
@@ -167,7 +166,6 @@ void loop()
         break;
 
     case SEEKING_LEFT:
-      presser.Press();
         if(TMRArd_IsTimerExpired(SEEKING_TIMER)) {
             TMRArd_ClearTimerExpired(SEEKING_TIMER);
             currState = TRAVELLING_TO_SERVER;
@@ -477,7 +475,7 @@ void loop()
             {
                 currState = BRAKING;
                 returnToState = ALIGNING_WITH_SERVER;
-                Brake(SPIN);
+                Brake(FORWARD);
             }
             else
             {
