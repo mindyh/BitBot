@@ -105,14 +105,19 @@ void loop()
         // found line, align with beacon
         if (lineSensors.IsCenterOverLine())
         {
+<<<<<<< HEAD
             TMRArd_StopTimer(SEEKING_TIMER);
             TMRArd_ClearTimerExpired(SEEKING_TIMER);
 
             if (millis() - time > DYNAMIC_BRAKE_TIME)
+=======
+            int deltaT = millis() - time;
+            if (deltaT > DYNAMIC_BRAKE_TIME)
+>>>>>>> master
             {
                 currState = BRAKING;
                 returnToState = ALIGNING_WITH_SERVER;
-                Brake(SPIN);
+                Brake(SPIN, deltaT);
             }
             else
             {
@@ -128,6 +133,7 @@ void loop()
 
             presser.Rest();
 
+<<<<<<< HEAD
             if (millis() - time > DYNAMIC_BRAKE_TIME)
             {
                 currState = BRAKING;
@@ -144,6 +150,13 @@ void loop()
             // currState = BRAKING;
             // returnToState = TRAVELLING_TO_SERVER;
             // Brake(SPIN);
+=======
+            // no dynamic braking on purpose - it 
+            // messes with our random pattern
+            currState = BRAKING;
+            returnToState = TRAVELLING_TO_SERVER;
+            Brake(SPIN, 0);
+>>>>>>> master
         } 
         // stuck in dead zone w/ no beacon signal. 
         // Go towards exchange (guaranteed to be found)
@@ -199,11 +212,12 @@ void loop()
         // Found line, align with server
         if (lineSensors.IsCenterOverLine())
         {
-            if (millis() - time > DYNAMIC_BRAKE_TIME)
+            int deltaT = millis() - time;
+            if (deltaT > DYNAMIC_BRAKE_TIME)
             {
                 currState = BRAKING;
                 returnToState = ALIGNING_WITH_SERVER;
-                Brake(BACKWARD);
+                Brake(BACKWARD, deltaT);
             }
             else
             {
@@ -240,15 +254,20 @@ void loop()
         // found beacon, go to it
         if (serverBeacon.IsFacingBeacon())
         {
-            if (millis() - time > DYNAMIC_BRAKE_TIME)
+            int deltaT = millis() - time;
+            if (deltaT > DYNAMIC_BRAKE_TIME)
             {
                 currState = BRAKING;
                 returnToState = GOING_TO_SERVER_WALL;
+<<<<<<< HEAD
                 if(sideOfServer == LEFT) {
                     Brake(SPIN_LEFT);
                 } else {
                     Brake(SPIN_RIGHT);
                 }
+=======
+                Brake(SPIN, deltaT);
+>>>>>>> master
             }
             else
             {
@@ -262,7 +281,7 @@ void loop()
         {
             currState = BACKING_UP;
             returnToState = TRAVELLING_TO_SERVER;
-            Backup(2, BACKWARD);
+            Backup(1.5, BACKWARD);
         }
         break;
 
@@ -315,11 +334,12 @@ void loop()
         // found exchange, go towards it
         if (exchangeBeacon.IsFacingBeacon())
         {
-            if (millis() - time > DYNAMIC_BRAKE_TIME)  // if it's spinning already
+            int deltaT = millis() - time;
+            if (deltaT > DYNAMIC_BRAKE_TIME)  // if it's spinning already
             {
                 currState = BRAKING;
                 returnToState = TRAVELLING_TO_EXCHANGE;
-                Brake(SPIN);
+                Brake(SPIN, deltaT);
             }
             else // if it started facing the server
             {
@@ -431,7 +451,7 @@ void loop()
 
                 currState = BACKING_UP;
                 returnToState = SEEKING_SERVER;
-                Backup(2, FORWARD);
+                Backup(1.5, FORWARD);
             }
             // switch direction of dispenser every so often,
             // just in case.
@@ -471,11 +491,16 @@ void loop()
         // and found it
         if (isSeekingLine && lineSensors.IsCenterOverLine())
         {
-            if (millis() - time > DYNAMIC_BRAKE_TIME)
+            int deltaT = millis() - time;
+            if (deltaT > DYNAMIC_BRAKE_TIME)
             {
                 currState = BRAKING;
                 returnToState = ALIGNING_WITH_SERVER;
+<<<<<<< HEAD
                 Brake(FORWARD);
+=======
+                Brake(SPIN, deltaT);
+>>>>>>> master
             }
             else
             {
@@ -510,9 +535,13 @@ void Backup(float duration, Direction dir)
 }
 
 /* ALWAYS set currState = BRAKING and returnToState before calling */
-void Brake(Direction dirToBrake)
+void Brake(Direction dirToBrake, int deltaT)
 {
-    TMRArd_InitTimer(BRAKING_TIMER, BRAKING_INTERVAL);
+    if(deltaT > FAST_BRAKE_TIME)
+        TMRArd_InitTimer(BRAKING_TIMER, BRAKING_INTERVAL*2);
+    else 
+        TMRArd_InitTimer(BRAKING_TIMER, BRAKING_INTERVAL);
+
     switch (dirToBrake)
     {
     case FORWARD:
