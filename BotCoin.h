@@ -28,7 +28,7 @@
 #define LIGHT_PIN_CENTER        A1
 #define BEACON_SERVER_PIN       A2
 #define BEACON_EXCHANGE_PIN     A3
-#define SIDE_EXCHANGE           A4
+#define SIDE_EXCHANGE_PIN       A4
 #define SIDE_SERVER_PIN         A5
 
 // Timers
@@ -59,6 +59,7 @@
 #define LINE_TRACKING_TIME    2*ONE_SEC
 #define ALIGNING_TIME         ONE_SEC*2
 #define DYNAMIC_BRAKE_TIME    ONE_SEC/2
+#define FAST_BRAKE_TIME       ONE_SEC
 #define SEEKING_TIME          4*ONE_SEC
 
 enum Direction {

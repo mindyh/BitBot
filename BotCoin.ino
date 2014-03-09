@@ -21,6 +21,8 @@ Servo myservo;
 Bumpers bumpers(BUMPER_FL_PIN, BUMPER_BL_PIN, BUMPER_FR_PIN, BUMPER_BR_PIN);
 Beacon serverBeacon(BEACON_SERVER_PIN, BEACON_THRESHOLD_VAL);
 Beacon exchangeBeacon(BEACON_EXCHANGE_PIN, BEACON_THRESHOLD_VAL);
+Beacon sideServerBeacon(SIDE_SERVER_PIN, BEACON_THRESHOLD_VAL);
+Beacon sideExchangeBeacon(SIDE_EXCHANGE_PIN, BEACON_THRESHOLD_VAL/2);
 LineSensors lineSensors(LIGHT_PIN_CENTER, LIGHT_PIN_FRONT, LIGHT_THRESHOLD_VAL);
 Drivetrain drivetrain(MOTOR_1_DIR_PIN, MOTOR_2_DIR_PIN, MOTOR_1_ENABLE_PIN, MOTOR_2_ENABLE_PIN);
 Turntable turntable(TURNTABLE_ENABLE_PIN, TURNTABLE_DIR_PIN);
@@ -29,7 +31,7 @@ ButtonPresser presser(BUTTON_PRESSER_PIN, myservo);
 Direction switchSpinDir = SPIN_LEFT;
 static unsigned long time = 0;
 static boolean isSeekingLine = false;
-static SideOfServer sideOfServer = LEFT;
+static SideOfServer sideOfServer;
 static TargetExchange targetExchange = FIVE;
     
 /*---- Main Program ---*/
@@ -105,15 +107,11 @@ void loop()
         // found line, align with beacon
         if (lineSensors.IsCenterOverLine())
         {
-<<<<<<< HEAD
             TMRArd_StopTimer(SEEKING_TIMER);
             TMRArd_ClearTimerExpired(SEEKING_TIMER);
 
-            if (millis() - time > DYNAMIC_BRAKE_TIME)
-=======
             int deltaT = millis() - time;
             if (deltaT > DYNAMIC_BRAKE_TIME)
->>>>>>> master
             {
                 currState = BRAKING;
                 returnToState = ALIGNING_WITH_SERVER;
@@ -128,45 +126,40 @@ void loop()
         // found the beacon, now spin left or right
         else if (serverBeacon.IsFacingBeacon()) 
         {
+            // clear timer
             TMRArd_StopTimer(SEEKING_TIMER);
             TMRArd_ClearTimerExpired(SEEKING_TIMER);
-
             presser.Rest();
 
-<<<<<<< HEAD
-            if (millis() - time > DYNAMIC_BRAKE_TIME)
+            // check what side of field you're on 
+            if(sideExchangeBeacon.IsFacingBeacon()) 
+                sideOfServer = RIGHT;
+            else
+                sideOfServer = LEFT;
+
+            // brake if necessary
+            int deltaT = millis() - time;
+            if (deltaT > DYNAMIC_BRAKE_TIME)
             {
                 currState = BRAKING;
-
                 returnToState = (sideOfServer == LEFT) ? SEEKING_LEFT : SEEKING_RIGHT;
-                Brake(SPIN);
+                Brake(SPIN, deltaT);
             }
             else
             {
                 currState = (sideOfServer == LEFT) ? SEEKING_LEFT : SEEKING_RIGHT;
                 Transition(currState);
             }
-
-            // currState = BRAKING;
-            // returnToState = TRAVELLING_TO_SERVER;
-            // Brake(SPIN);
-=======
-            // no dynamic braking on purpose - it 
-            // messes with our random pattern
-            currState = BRAKING;
-            returnToState = TRAVELLING_TO_SERVER;
-            Brake(SPIN, 0);
->>>>>>> master
         } 
         // stuck in dead zone w/ no beacon signal. 
         // Go towards exchange (guaranteed to be found)
-        // else if (TMRArd_IsTimerExpired(SEEKING_TIMER))
-        // {
-        //     TMRArd_ClearTimerExpired(SEEKING_TIMER);
+        else if (TMRArd_IsTimerExpired(SEEKING_TIMER))
+        {
+            TMRArd_ClearTimerExpired(SEEKING_TIMER);
 
-        //     currState = SEEKING_EXCHANGE_2;
-        //     Transition(SEEKING_EXCHANGE_2);
-        // }
+            currState = SEEKING_EXCHANGE_2;
+            Transition(SEEKING_EXCHANGE_2);
+        }
         break;
 
     case SEEKING_RIGHT:
@@ -212,6 +205,9 @@ void loop()
         // Found line, align with server
         if (lineSensors.IsCenterOverLine())
         {
+            TMRArd_StopTimer(TRAVELLING_TIMER);
+            TMRArd_ClearTimerExpired(TRAVELLING_TIMER);
+            
             int deltaT = millis() - time;
             if (deltaT > DYNAMIC_BRAKE_TIME)
             {
@@ -228,10 +224,9 @@ void loop()
         // hit a wall, back up and try again
         else if (bumpers.IsFrontPressed())
         {
-            if(isFirstSeek)
-                sideOfServer = (sideOfServer == LEFT) ? RIGHT : LEFT;
-
-            isFirstSeek = false;
+            TMRArd_StopTimer(TRAVELLING_TIMER);
+            TMRArd_ClearTimerExpired(TRAVELLING_TIMER);
+            
             currState = BACKING_UP;
             returnToState = SEEKING_SERVER;
             Backup(1, BACKWARD);
@@ -246,7 +241,7 @@ void loop()
             TMRArd_ClearTimerExpired(TRAVELLING_TIMER);
             currState = SEEKING_SERVER;
             Transition(SEEKING_SERVER);
-            sideOfServer = (sideOfServer == LEFT) ? RIGHT : LEFT;
+            //sideOfServer = (sideOfServer == LEFT) ? RIGHT : LEFT;
         }
         break;
 
@@ -259,15 +254,11 @@ void loop()
             {
                 currState = BRAKING;
                 returnToState = GOING_TO_SERVER_WALL;
-<<<<<<< HEAD
                 if(sideOfServer == LEFT) {
-                    Brake(SPIN_LEFT);
+                    Brake(SPIN_LEFT, deltaT);
                 } else {
-                    Brake(SPIN_RIGHT);
+                    Brake(SPIN_RIGHT, deltaT);
                 }
-=======
-                Brake(SPIN, deltaT);
->>>>>>> master
             }
             else
             {
@@ -496,11 +487,7 @@ void loop()
             {
                 currState = BRAKING;
                 returnToState = ALIGNING_WITH_SERVER;
-<<<<<<< HEAD
-                Brake(FORWARD);
-=======
-                Brake(SPIN, deltaT);
->>>>>>> master
+                Brake(FORWARD, deltaT);
             }
             else
             {
