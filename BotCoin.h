@@ -28,6 +28,8 @@
 #define LIGHT_PIN_CENTER        A1
 #define BEACON_SERVER_PIN       A2
 #define BEACON_EXCHANGE_PIN     A3
+#define SIDE_EXCHANGE_PIN       A4
+#define SIDE_SERVER_PIN         A5
 
 // Timers
 #define HEARTBEAT_TIMER         1
@@ -51,6 +53,7 @@
 #define BRAKING_INTERVAL      ONE_SEC/4
 #define TRAVELLING_TIME       2.5*ONE_SEC 
 #define SPIN_RATE             150
+#define  SLOW_SPIN_RATE        130   
 #define SLOW_DRIVE_RATE       150
 #define DRIVE_RATE            180
 #define TURNTABLE_RATE        240
@@ -73,6 +76,8 @@ enum State {
     WAITING_TO_START,
     SEEKING_SERVER,
     SEEKING_EXCHANGE_2,
+    SEEKING_RIGHT,
+    SEEKING_LEFT,
     TRAVELLING_TO_SERVER,
     ALIGNING_WITH_SERVER,
     ALIGNING_WITH_SERVER_WALL,
@@ -93,6 +98,17 @@ enum Bumper {
     FR,
     BL,
     BR
+};
+
+enum SideOfServer {
+    LEFT,
+    RIGHT
+};
+
+enum TargetExchange {
+    THREE,
+    FIVE,
+    EIGHT
 };
   
 

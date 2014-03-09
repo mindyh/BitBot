@@ -21,6 +21,8 @@ Servo myservo;
 Bumpers bumpers(BUMPER_FL_PIN, BUMPER_BL_PIN, BUMPER_FR_PIN, BUMPER_BR_PIN);
 Beacon serverBeacon(BEACON_SERVER_PIN, BEACON_THRESHOLD_VAL);
 Beacon exchangeBeacon(BEACON_EXCHANGE_PIN, BEACON_THRESHOLD_VAL);
+Beacon sideServerBeacon(SIDE_SERVER_PIN, BEACON_THRESHOLD_VAL);
+Beacon sideExchangeBeacon(SIDE_EXCHANGE_PIN, 250);
 LineSensors lineSensors(LIGHT_PIN_CENTER, LIGHT_PIN_FRONT, LIGHT_THRESHOLD_VAL);
 Drivetrain drivetrain(MOTOR_1_DIR_PIN, MOTOR_2_DIR_PIN, MOTOR_1_ENABLE_PIN, MOTOR_2_ENABLE_PIN);
 Turntable turntable(TURNTABLE_ENABLE_PIN, TURNTABLE_DIR_PIN);
@@ -29,6 +31,8 @@ ButtonPresser presser(BUTTON_PRESSER_PIN, myservo);
 Direction switchSpinDir = SPIN_LEFT;
 static unsigned long time = 0;
 static boolean isSeekingLine = false;
+static SideOfServer sideOfServer;
+static TargetExchange targetExchange = FIVE;
     
 /*---- Main Program ---*/
 void setup()
@@ -42,6 +46,8 @@ void setup()
     digitalWrite(HEARTBEAT_LED, HIGH);
     serverBeacon.Clear();
     exchangeBeacon.Clear();
+    sideExchangeBeacon.Clear();
+    sideServerBeacon.Clear();
     drivetrain.Stop();
     presser.Press();
 
@@ -60,8 +66,8 @@ void setup()
 void loop()
 {
     static State currState = WAITING_TO_START;
-
     static State returnToState;
+    static boolean isFirstRun = true;
 
     // Always do
     if (TMRArd_IsTimerExpired(HEARTBEAT_TIMER))
@@ -72,6 +78,8 @@ void loop()
 
     exchangeBeacon.Update();
     serverBeacon.Update();
+    sideExchangeBeacon.Update();
+    sideServerBeacon.Update();
 
     if (TMRArd_IsTimerExpired(ENDGAME_TIMER))
     {
@@ -85,6 +93,8 @@ void loop()
     {
         serverBeacon.Clear();
         exchangeBeacon.Clear();
+        sideServerBeacon.Clear();
+        sideExchangeBeacon.Clear();
         TMRArd_InitTimer(CLEAR_BEACON_TIMER, BEACON_CLEAR_PERIOD);
     }
 
@@ -103,6 +113,9 @@ void loop()
         // found line, align with beacon
         if (lineSensors.IsCenterOverLine())
         {
+            TMRArd_StopTimer(SEEKING_TIMER);
+            TMRArd_ClearTimerExpired(SEEKING_TIMER);
+
             int deltaT = millis() - time;
             if (deltaT > DYNAMIC_BRAKE_TIME)
             {
@@ -116,18 +129,41 @@ void loop()
                 Transition(ALIGNING_WITH_SERVER);
             }
         }
-        // found the beacon, go towards it
+        // found the beacon, now spin left or right
         else if (serverBeacon.IsFacingBeacon()) 
         {
+            // clear timer
             TMRArd_StopTimer(SEEKING_TIMER);
             TMRArd_ClearTimerExpired(SEEKING_TIMER);
             presser.Rest();
 
-            // no dynamic braking on purpose - it 
-            // messes with our random pattern
-            currState = BRAKING;
-            returnToState = TRAVELLING_TO_SERVER;
-            Brake(SPIN, 0);
+            // check what side of field you're on 
+            if(isFirstRun) {
+              isFirstRun = false;
+              if(sideExchangeBeacon.IsFacingBeacon())  {
+                  sideOfServer = RIGHT;
+                  presser.Press();
+              }
+              else {
+                  sideOfServer = LEFT;
+                  presser.Rest();
+              }
+            }
+
+            // brake if necessary
+            int deltaT = millis() - time;
+            if (deltaT > DYNAMIC_BRAKE_TIME)
+            {
+                currState = BRAKING;
+                returnToState = (sideOfServer == LEFT) ? SEEKING_LEFT : SEEKING_RIGHT;
+                Brake(SPIN, deltaT);
+            }
+            else
+            {
+                currState = (sideOfServer == LEFT) ? SEEKING_LEFT : SEEKING_RIGHT;
+                Transition(currState);
+            }
+
         } 
         // stuck in dead zone w/ no beacon signal. 
         // Go towards exchange (guaranteed to be found)
@@ -140,6 +176,22 @@ void loop()
         }
         break;
 
+    case SEEKING_RIGHT:
+        if(TMRArd_IsTimerExpired(SEEKING_TIMER)) {
+            TMRArd_ClearTimerExpired(SEEKING_TIMER);
+            currState = TRAVELLING_TO_SERVER;
+            Transition(TRAVELLING_TO_SERVER);
+        }
+        break;
+
+    case SEEKING_LEFT:
+        if(TMRArd_IsTimerExpired(SEEKING_TIMER)) {
+            TMRArd_ClearTimerExpired(SEEKING_TIMER);
+            currState = TRAVELLING_TO_SERVER;
+            Transition(TRAVELLING_TO_SERVER);
+        }
+        break;
+
     case SEEKING_EXCHANGE_2:
         // found exchange, go towards it and resume searching for server
         if(exchangeBeacon.IsFacingBeacon()) 
@@ -149,7 +201,7 @@ void loop()
 
             currState = BACKING_UP;
             returnToState = SEEKING_SERVER;
-            Backup(2, BACKWARD);
+            Backup(1.5, BACKWARD);
         }
         // did not find (should never happen), randomly 
         // drive somewhere and try again
@@ -165,6 +217,9 @@ void loop()
         // Found line, align with server
         if (lineSensors.IsCenterOverLine())
         {
+            TMRArd_StopTimer(TRAVELLING_TIMER);
+            TMRArd_ClearTimerExpired(TRAVELLING_TIMER);
+            
             int deltaT = millis() - time;
             if (deltaT > DYNAMIC_BRAKE_TIME)
             {
@@ -181,10 +236,14 @@ void loop()
         // hit a wall, back up and try again
         else if (bumpers.IsFrontPressed())
         {
+            TMRArd_StopTimer(TRAVELLING_TIMER);
+            TMRArd_ClearTimerExpired(TRAVELLING_TIMER);
+            
             currState = BACKING_UP;
             returnToState = SEEKING_SERVER;
-            Backup(1.5, BACKWARD);
+            Backup(1, BACKWARD);
         }
+
         // went a long time without seeing anything. Try again.
         else if (TMRArd_IsTimerExpired(TRAVELLING_TIMER) && !serverBeacon.IsFacingBeacon())
         {
@@ -203,7 +262,13 @@ void loop()
             {
                 currState = BRAKING;
                 returnToState = GOING_TO_SERVER_WALL;
-                Brake(SPIN, deltaT);
+
+                Brake(SPIN, deltaT); 
+//                if(sideOfServer == LEFT) {
+//                    Brake(SPIN_LEFT, deltaT); // extra to compensate that spinning is faster than going straignt
+//                } else {
+//                    Brake(SPIN_RIGHT, deltaT); // extra to compensate that spinning is faster than going straignt
+//                }
             }
             else
             {
@@ -295,17 +360,49 @@ void loop()
         }
         break;
 
-    case SEEKING_SERVER_2:
-        // found server. Go towards it a bit to 
-        // give yourself room to find exchange beacons.
-        if (serverBeacon.IsFacingBeacon())
-        {
-            // test to see if dynamic braking is needed
-            currState = BACKING_UP;
-            returnToState = SEEKING_EXCHANGE;
-            Backup(3, FORWARD);
-        }
-        break;
+//    case ALIGNING_SIDE_WITH_SERVER:
+//        if(sideServerBeacon.IsFacingBeacon()) {
+//            if (millis() - time > DYNAMIC_BRAKE_TIME)
+//            {
+//                currState = BRAKING;
+//                returnToState = TRAVELLING_TO_EXCHANGE_2;
+//                Brake(SPIN);
+//            }
+//            else
+//            {
+//                currState = TRAVELLING_TO_EXCHANGE_2;
+//                Transition(TRAVELLING_TO_EXCHANGE_2);
+//            }
+//        }
+//        break;
+//
+//    case TRAVELLING_TO_EXCHANGE_2:
+//        currState = BRAKING;
+//        returnToState = SEEKING_EXCHANGE;
+//        if(targetExchange == FIVE) {
+//            if(sideOfServer == LEFT) 
+//                Brake(FORWARD);
+//            else 
+//                Brake(BACKWARD);
+//        } else if (targetExchange == THREE) {
+//            if(sideOfServer == LEFT) 
+//                Brake(BACKWARD);
+//            else 
+//                Brake(FORWARD);
+//        }
+//        break;
+//
+//    case SEEKING_SERVER_2:
+//        // found server. Go towards it a bit to 
+//        // give yourself room to find exchange beacons.
+//        if (serverBeacon.IsFacingBeacon())
+//        {
+//            // test to see if dynamic braking is needed
+//            currState = BACKING_UP;
+//            returnToState = SEEKING_EXCHANGE;
+//            Backup(3, FORWARD);
+//        }
+//        break;
 
     case TRAVELLING_TO_EXCHANGE:
         // lost track of the exchange. Find another one.
@@ -347,7 +444,7 @@ void loop()
         {
             //  After you're done dispensing, back up and 
             // mine more coins
-            if (numTurns == 2)
+            if (numTurns == 1)
             {
                 numTurns = 0;
                 turntable.Stop();
@@ -400,7 +497,7 @@ void loop()
             {
                 currState = BRAKING;
                 returnToState = ALIGNING_WITH_SERVER;
-                Brake(SPIN, deltaT);
+                Brake(FORWARD, deltaT);
             }
             else
             {
@@ -408,9 +505,9 @@ void loop()
                 Transition(ALIGNING_WITH_SERVER);
             }
         }
-        else if (TMRArd_IsTimerExpired(TRAVELLING_TIMER))
+        else if (TMRArd_IsTimerExpired(BACKING_UP_TIMER))
         {
-            TMRArd_ClearTimerExpired(TRAVELLING_TIMER);
+            TMRArd_ClearTimerExpired(BACKING_UP_TIMER);
 
             currState = returnToState;
             Transition(returnToState);
@@ -483,6 +580,16 @@ void Transition(State state)
         isSeekingLine = true;
         break;
 
+    case SEEKING_RIGHT:
+        TMRArd_InitTimer(SEEKING_TIMER, ONE_SEC/3);
+        drivetrain.SpinRight(SPIN_RATE);
+        break;
+
+    case SEEKING_LEFT:
+        TMRArd_InitTimer(SEEKING_TIMER, ONE_SEC/3);
+        drivetrain.SpinLeft(SPIN_RATE);
+        break;
+
     case SEEKING_EXCHANGE_2:
         TMRArd_InitTimer(SEEKING_TIMER, SEEKING_TIME);
         SwitchSpin();
@@ -491,13 +598,19 @@ void Transition(State state)
         break;
 
     case TRAVELLING_TO_SERVER:
+        presser.Rest();
         drivetrain.GoForward(DRIVE_RATE);
-        TMRArd_InitTimer(TRAVELLING_TIMER, TRAVELLING_TIME);
+        TMRArd_InitTimer(TRAVELLING_TIMER, TRAVELLING_TIME*2);
         time = millis();
         isSeekingLine = true;
         break;
 
     case ALIGNING_WITH_SERVER:
+//        if(sideOfServer == LEFT) {
+//            drivetrain.SpinRight(SLOW_SPIN_RATE);
+//        } else {
+//            drivetrain.SpinLeft(SLOW_SPIN_RATE);
+//        }
         SwitchSpin();
         time = millis();
         isSeekingLine = false;
@@ -509,8 +622,18 @@ void Transition(State state)
 
     case SEEKING_EXCHANGE:
         TMRArd_InitTimer(SEEKING_TIMER, SEEKING_TIME);
-        SwitchSpin();
         time = millis();
+        if(targetExchange == FIVE) {
+            if(sideOfServer == LEFT) 
+                drivetrain.SpinRight(SPIN_RATE);
+            else 
+                drivetrain.SpinLeft(SPIN_RATE);
+        } else if (targetExchange == THREE) {
+            if(sideOfServer == LEFT) 
+                drivetrain.SpinLeft(SPIN_RATE);
+            else 
+                drivetrain.SpinRight(SPIN_RATE);
+        }
         break;
 
     case TRAVELLING_TO_EXCHANGE:

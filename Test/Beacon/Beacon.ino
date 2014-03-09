@@ -7,8 +7,8 @@
  #include <Timers.h>
  
  /*---------------- Module Defines ---------------------------*/
-#define BEACON_SERVER_PIN    A2
-#define BEACON_EXCHANGE_PIN    A3
+#define BEACON_EXCHANGE_PIN    A4
+#define BEACON_SERVER_PIN    A5
 
 #define HEARTBEAT_LED  13
 #define ONE_SEC   1000
@@ -25,7 +25,7 @@ unsigned char TestForKey(void) {
 }
 
 bool isFacingServer(int min, int max) {
-    return (max - min > 500);
+    return (max - min > 250);
 }
  
  /*---- Main Program ---*/
@@ -39,6 +39,7 @@ void setup() {
 
   digitalWrite(HEARTBEAT_LED, HIGH);
   TMRArd_InitTimer(HEARTBEAT_TIMER, ONE_SEC);
+  TMRArd_InitTimer(BEACON_CLEAR_TIMER, ONE_SEC/10);
 }
 
 void loop() {
@@ -53,7 +54,8 @@ void loop() {
         maxServerBeaconVal = 500;
         minExchangeBeaconVal = 500;
         maxExchangeBeaconVal = 500;
-        Serial.println("clear");
+        TMRArd_InitTimer(BEACON_CLEAR_TIMER, ONE_SEC);
+       // Serial.println("clear");
     }
 
     int currExchangeBeaconVal = analogRead(BEACON_EXCHANGE_PIN);
@@ -71,11 +73,11 @@ void loop() {
     else if (currServerBeaconVal > maxServerBeaconVal)
         maxServerBeaconVal = currServerBeaconVal;
 
-//    Serial.println(currServerBeaconVal);
-//
+//   Serial.println(maxServerBeaconVal - minServerBeaconVal);
+////
 //    if(isFacingServer(minServerBeaconVal, maxServerBeaconVal))
 //        Serial.println("facing server");
-    Serial.println(currExchangeBeaconVal);
+    //Serial.println(currServerBeaconVal);
 
     if(isFacingServer(minExchangeBeaconVal, maxExchangeBeaconVal))
         Serial.println("facing exchange");
