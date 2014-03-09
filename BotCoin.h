@@ -53,6 +53,7 @@
 #define BRAKING_INTERVAL      ONE_SEC/4
 #define TRAVELLING_TIME       2.5*ONE_SEC 
 #define SPIN_RATE             150
+#define  SLOW_SPIN_RATE        130   
 #define SLOW_DRIVE_RATE       150
 #define DRIVE_RATE            180
 #define TURNTABLE_RATE        240

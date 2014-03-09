@@ -7,8 +7,8 @@
  #include <Timers.h>
  
  /*---------------- Module Defines ---------------------------*/
-#define BEACON_SERVER_PIN    A4
-#define BEACON_EXCHANGE_PIN    A5
+#define BEACON_EXCHANGE_PIN    A4
+#define BEACON_SERVER_PIN    A5
 
 #define HEARTBEAT_LED  13
 #define ONE_SEC   1000
@@ -25,7 +25,7 @@ unsigned char TestForKey(void) {
 }
 
 bool isFacingServer(int min, int max) {
-    return (max - min > 200);
+    return (max - min > 250);
 }
  
  /*---- Main Program ---*/
@@ -73,14 +73,14 @@ void loop() {
     else if (currServerBeaconVal > maxServerBeaconVal)
         maxServerBeaconVal = currServerBeaconVal;
 
-   Serial.println(maxServerBeaconVal - minServerBeaconVal);
-//
-    if(isFacingServer(minServerBeaconVal, maxServerBeaconVal))
-        Serial.println("facing server");
+//   Serial.println(maxServerBeaconVal - minServerBeaconVal);
+////
+//    if(isFacingServer(minServerBeaconVal, maxServerBeaconVal))
+//        Serial.println("facing server");
     //Serial.println(currServerBeaconVal);
 
-//    if(isFacingServer(minExchangeBeaconVal, maxExchangeBeaconVal))
-//        Serial.println("facing exchange");
+    if(isFacingServer(minExchangeBeaconVal, maxExchangeBeaconVal))
+        Serial.println("facing exchange");
 
   if(TMRArd_IsTimerExpired(HEARTBEAT_TIMER)) {
     TMRArd_InitTimer(HEARTBEAT_TIMER, ONE_SEC);
