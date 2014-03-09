@@ -28,6 +28,8 @@
 #define LIGHT_PIN_CENTER        A1
 #define BEACON_SERVER_PIN       A2
 #define BEACON_EXCHANGE_PIN     A3
+#define SIDE_EXCHANGE           A4
+#define SIDE_SERVER_PIN         A5
 
 // Timers
 #define HEARTBEAT_TIMER         1
@@ -72,6 +74,8 @@ enum State {
     WAITING_TO_START,
     SEEKING_SERVER,
     SEEKING_EXCHANGE_2,
+    SEEKING_RIGHT,
+    SEEKING_LEFT,
     TRAVELLING_TO_SERVER,
     ALIGNING_WITH_SERVER,
     ALIGNING_WITH_SERVER_WALL,
@@ -97,7 +101,13 @@ enum Bumper {
 enum SideOfServer {
     LEFT,
     RIGHT
-}
+};
+
+enum TargetExchange {
+    THREE,
+    FIVE,
+    EIGHT
+};
   
 
 #endif
