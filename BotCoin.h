@@ -57,6 +57,7 @@
 #define LINE_TRACKING_TIME    2*ONE_SEC
 #define ALIGNING_TIME         ONE_SEC*2
 #define DYNAMIC_BRAKE_TIME    ONE_SEC/2
+#define FAST_BRAKE_TIME       ONE_SEC
 #define SEEKING_TIME          4*ONE_SEC
 
 enum Direction {
