@@ -19,8 +19,9 @@
 #define BUTTON_PRESSER_PIN      8
 #define BUMPER_BR_PIN           9
 #define BUMPER_BL_PIN           10
-#define BUMPER_FL_PIN           11
+#define BUMPER_FL_PIN           12
 #define BUMPER_FR_PIN           12
+#define BUMPER_TURNTABLE_PIN    11
 #define HEARTBEAT_LED           13
 
 // Analog Pins
@@ -112,6 +113,8 @@ enum TargetExchange {
     FIVE,
     EIGHT
 };
+
+TargetExchange targetOrder[] = {FIVE, THREE, EIGHT};
   
 
 #endif

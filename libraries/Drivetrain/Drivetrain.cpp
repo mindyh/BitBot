@@ -20,30 +20,22 @@ Drivetrain::Drivetrain( int dir1_pin,
 
 /*------Drivetrain functions-----*/
 void Drivetrain::GoForward(int val) {
-    digitalWrite(_dir1_pin, LOW);
-    digitalWrite(_dir2_pin, HIGH);
+    digitalWrite(_dir1_pin, HIGH);
+    digitalWrite(_dir2_pin, LOW);
 
     analogWrite(_enbl1_pin, val);
     analogWrite(_enbl2_pin, val);
 }
 
 void Drivetrain::GoBackward(int val){
-    digitalWrite(_dir1_pin, HIGH);
-    digitalWrite(_dir2_pin, LOW);
+    digitalWrite(_dir1_pin, LOW);
+    digitalWrite(_dir2_pin, HIGH);
 
     analogWrite(_enbl1_pin, val);
     analogWrite(_enbl2_pin, val);
 }
 
 void Drivetrain::SpinLeft(int val) {
-    digitalWrite(_dir1_pin, LOW);
-    digitalWrite(_dir2_pin, LOW);
-
-    analogWrite(_enbl1_pin, val);
-    analogWrite(_enbl2_pin, val);
-}
-
-void Drivetrain::SpinRight(int val) {
     digitalWrite(_dir1_pin, HIGH);
     digitalWrite(_dir2_pin, HIGH);
 
@@ -51,15 +43,23 @@ void Drivetrain::SpinRight(int val) {
     analogWrite(_enbl2_pin, val);
 }
 
+void Drivetrain::SpinRight(int val) {
+    digitalWrite(_dir1_pin, LOW);
+    digitalWrite(_dir2_pin, LOW);
+
+    analogWrite(_enbl1_pin, val);
+    analogWrite(_enbl2_pin, val);
+}
+
 void Drivetrain::TurnRight(int val) {
-    digitalWrite(_dir1_pin, HIGH);
+    digitalWrite(_dir1_pin, LOW);
 
     analogWrite(_enbl1_pin, val);
     analogWrite(_enbl2_pin, 0);
 }
 
 void Drivetrain::TurnLeft(int val) {
-    digitalWrite(_dir1_pin, LOW);
+    digitalWrite(_dir1_pin, HIGH);
 
     analogWrite(_enbl1_pin, 0);
     analogWrite(_enbl2_pin, val);

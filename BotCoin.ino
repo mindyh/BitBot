@@ -33,8 +33,8 @@ static unsigned long time = 0;
 static boolean isSeekingLine = false;
 static SideOfServer startingSideOfServer;
 static SideOfServer currSideOfServer;
-static TargetExchange targetExchange = FIVE;
-static int numRuns = 1;
+static int numRuns = 0;
+static TargetExchange targetExchange = targetOrder[numRuns];
     
 /*---- Main Program ---*/
 void setup()
@@ -386,7 +386,11 @@ void loop()
                 currState = BRAKING;
                 returnToState = TRAVELLING_TO_EXCHANGE;
                 
-                Brake(SPIN_RIGHT, deltaT);
+                if((startingSideOfServer == LEFT && targetExchange == FIVE) || 
+                    (startingSideOfServer == RIGHT && targetExchange == THREE)) 
+                    Brake(SPIN_LEFT, deltaT);
+                else 
+                    Brake(SPIN_RIGHT, deltaT);
             }
             else // if it started facing the server
             {
@@ -463,15 +467,19 @@ void loop()
             {
                 if (turntable.GetLastDir() == CCW)
                 {
-                    turntable.TurnCCW(TURNTABLE_RATE);
+                    turntable.TurnCW(TURNTABLE_RATE);
                 }
                 else
                 {
-                    turntable.TurnCW(TURNTABLE_RATE);
+                    turntable.TurnCCW(TURNTABLE_RATE);
                 }
                 TMRArd_InitTimer(DISPENSER_TIMER, 5 * ONE_SEC);
                 numTurns++;
             }
+
+            // update target exchange
+            numRuns++;
+            targetExchange = targetOrder[numRuns];
         }
         break;
     case WAITING_TO_END:

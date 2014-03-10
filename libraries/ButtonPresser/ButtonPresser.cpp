@@ -9,17 +9,17 @@ ButtonPresser::ButtonPresser(int pin, Servo myservo)
 }
 
 void ButtonPresser::Press() {
-    _myservo.write(60);
+    _myservo.write(120);
     position = PRESS;
 } 
 
 void ButtonPresser::Withdraw() {
-    _myservo.write(90);
+    _myservo.write(130);
     position = WITHDRAW;
 }
 
 void ButtonPresser::Rest() {
-    _myservo.write(110);
+    _myservo.write(150);
     position = REST;
 }
 

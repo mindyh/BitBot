@@ -3,6 +3,11 @@
 
 #include "Arduino.h"
 
+enum TurntableDir {
+    CW,
+    CCW
+};
+
 class Turntable
 {
   public:
@@ -12,11 +17,13 @@ class Turntable
     void Stop();
     bool IsBumperPressed();
     int GetCurrentSector();
+    TurntableDir GetLastDir();
   private:
     int _enbl;
     int _dir;
     int _bumper;
     int currSector;
+    TurntableDir lastDir;
 };
 
 #endif

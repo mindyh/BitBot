@@ -17,8 +17,8 @@ void Beacon::Clear() {
 
 void Beacon::Update() {
   int currVal = analogRead(_pin);
-  if(currVal < minVal)
+  if(currVal <= minVal)
       minVal = currVal;
-  else if (currVal > maxVal)
+  if (currVal >= maxVal)
       maxVal = currVal;
 }
