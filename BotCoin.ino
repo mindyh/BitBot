@@ -25,7 +25,7 @@ Beacon sideServerBeacon(SIDE_SERVER_PIN, BEACON_THRESHOLD_VAL);
 Beacon sideExchangeBeacon(SIDE_EXCHANGE_PIN, 250);
 LineSensors lineSensors(LIGHT_PIN_CENTER, LIGHT_PIN_FRONT, LIGHT_THRESHOLD_VAL);
 Drivetrain drivetrain(MOTOR_1_DIR_PIN, MOTOR_2_DIR_PIN, MOTOR_1_ENABLE_PIN, MOTOR_2_ENABLE_PIN);
-Turntable turntable(TURNTABLE_ENABLE_PIN, TURNTABLE_DIR_PIN, TURNTABLE_CLICKER_PIN);
+Turntable turntable(TURNTABLE_ENABLE_PIN, TURNTABLE_DIR_PIN);
 ButtonPresser presser(BUTTON_PRESSER_PIN, myservo);
 
 Direction switchSpinDir = SPIN_LEFT;
@@ -58,8 +58,9 @@ void setup()
 
     // Start timers
     TMRArd_InitTimer(HEARTBEAT_TIMER, ONE_SEC / 2);   // to know we're alive
-    TMRArd_InitTimer(ENDGAME_TIMER, 120 * ONE_SEC);   // Bot to shut off automatically in 2 minutes
     TMRArd_InitTimer(CLEAR_BEACON_TIMER, BEACON_CLEAR_PERIOD); // we have 20Hz sampling rate on beacons
+    // Bot to shut off automatically in 2 minutes
+    TMRArd_InitTimer(ENDGAME_TIMER, 120 * ONE_SEC);  
 
     // clear timers to make sure they don't start expired
     TMRArd_ClearTimerExpired(BUTTON_PRESS_TIMER);
@@ -75,6 +76,8 @@ void loop()
     static State returnToState;
     static boolean isFirstRun = true;
     static int numCoinsMined = 0;
+    static boolean weKnowWhereWeAre = true;
+    static int startTime;
    // static int targetCoins;
 
     // Always do
@@ -89,14 +92,6 @@ void loop()
     sideExchangeBeacon.Update();
     sideServerBeacon.Update();
 
-    if (TMRArd_IsTimerExpired(ENDGAME_TIMER))
-    {
-        currState = WAITING_TO_END;
-        turntable.Stop();
-        drivetrain.Stop();
-        presser.Rest();
-    }
-
     if (TMRArd_IsTimerExpired(CLEAR_BEACON_TIMER))
     {
         serverBeacon.Clear();
@@ -104,6 +99,15 @@ void loop()
         sideServerBeacon.Clear();
         sideExchangeBeacon.Clear();
         TMRArd_InitTimer(CLEAR_BEACON_TIMER, BEACON_CLEAR_PERIOD);
+        startTime = millis();
+    }
+    
+    if (TMRArd_IsTimerExpired(ENDGAME_TIMER))
+    {
+        currState = WAITING_TO_END;
+        turntable.Stop();
+        drivetrain.Stop();
+        presser.Rest();
     }
 
     // State dependent
@@ -115,6 +119,8 @@ void loop()
         {
             currState = SEEKING_SERVER;
             Transition(SEEKING_SERVER);
+            // Bot to shut off automatically in 2 minutes
+            TMRArd_InitTimer(ENDGAME_TIMER, 120 * ONE_SEC);   
         }
         break;
     case SEEKING_SERVER:
@@ -324,12 +330,16 @@ void loop()
         //int targetPresses = (targetCoins + 1)*targetCoins/2;
         static int numPresses = 0;
         // mined target number of coins. Go find an exchange.
-        if (numPresses == targetPresses[numRuns] + 1)
+        if (numPresses == targetPresses[numRuns] + 2)
         {
             presser.Rest();
 
             currState = BACKING_UP;
-            returnToState = ALIGNING_SIDE_WITH_SERVER;
+            if(targetExchange == EIGHT)
+                returnToState = SEEKING_EXCHANGE;
+            else
+                returnToState = ALIGNING_SIDE_WITH_SERVER;
+
             Backup(1, BACKWARD);
         }
         else
@@ -384,12 +394,8 @@ void loop()
            
             numRuns++;
             targetExchange = targetOrder[numRuns];
-            currState = CROSSING_FIELD;
-            if(drivetrain.GetLastDir() == FORWARD) {
-                drivetrain.GoBackward(DRIVE_RATE);
-            } else {
-                drivetrain.GoForward(DRIVE_RATE);
-            }
+            currState = ALIGNING_WITH_WALL;
+            TMRArd_InitTimer(ALIGNING_TIMER, ONE_SEC);
 
             // 3 beacon was taken, go for 8
         } else if ((targetExchange == THREE) && 
@@ -405,11 +411,23 @@ void loop()
         } 
         break;
 
+    case ALIGNING_WITH_WALL:
+        if(TMRArd_IsTimerExpired(ALIGNING_TIMER)) {
+            if(drivetrain.GetLastDir() == FORWARD) {
+                drivetrain.GoBackward(DRIVE_RATE);
+            } else {
+                drivetrain.GoForward(DRIVE_RATE);
+            }
+
+            currState = CROSSING_FIELD;
+        }
+        break;
+
     case CROSSING_FIELD:
         if(sideServerBeacon.IsFacingBeacon()) {
-            currState = ALIGNING_SIDE_WITH_EXCHANGE;
             currSideOfServer = (currSideOfServer == LEFT) ? RIGHT : LEFT;
-            TMRArd_InitTimer(TRAVELLING_TIMER, ONE_SEC);
+            currState = ALIGNING_SIDE_WITH_EXCHANGE;
+            TMRArd_InitTimer(TRAVELLING_TIMER, 1.5*ONE_SEC);
         } 
         // else if (bumpers.IsFrontPressed()) {
         //     // hit a wall, back up and 
@@ -441,12 +459,33 @@ void loop()
         }
         // cannot find any exchanges. Align with the server
         // and try agin
-        // else if (TMRArd_IsTimerExpired(SEEKING_TIMER))
-        // {
-        //     TMRArd_ClearTimerExpired(SEEKING_TIMER);
-        //     currState = SEEKING_SERVER_2;
-        //     Transition(SEEKING_SERVER_2);
-        // }
+        else if (TMRArd_IsTimerExpired(SEEKING_TIMER))
+        {
+            TMRArd_ClearTimerExpired(SEEKING_TIMER);
+            currState = SEEKING_SERVER_2;
+            Transition(SEEKING_SERVER_2);
+        }
+        break;
+
+    case SEEKING_SERVER_2:
+        // found exchange, go towards it and resume searching for server
+        if(serverBeacon.IsFacingBeacon()) 
+        {
+            TMRArd_StopTimer(SEEKING_TIMER);
+            TMRArd_ClearTimerExpired(SEEKING_TIMER);
+
+            currState = BACKING_UP;
+            returnToState = SEEKING_EXCHANGE;
+            Backup(1.5, FORWARD);
+        }
+        // did not find (should never happen), randomly 
+        // drive somewhere and try again
+        else if (TMRArd_IsTimerExpired(SEEKING_TIMER)) {
+            TMRArd_ClearTimerExpired(SEEKING_TIMER);
+
+            currState = TRAVELLING_TO_EXCHANGE;
+            Transition(TRAVELLING_TO_EXCHANGE);
+        }
         break;
 
     case TRAVELLING_TO_EXCHANGE:
@@ -491,7 +530,7 @@ void loop()
         {
             //  After you're done dispensing, back up and 
             // mine more coins
-            if (numTurns == 0)
+            if (numTurns == 1)
             {
                 numTurns = 0;
                 turntable.Stop();
@@ -521,7 +560,7 @@ void loop()
                 else
                     turntable.TurnCCW(TURNTABLE_RATE);
 
-                TMRArd_InitTimer(DISPENSER_TIMER, DISPENSING_TIME);
+                TMRArd_InitTimer(DISPENSER_TIMER, DISPENSING_TIME/2);
                 numTurns++;
             }
         }
@@ -674,7 +713,7 @@ void Transition(State state)
     case TRAVELLING_TO_SERVER:
         presser.Rest();
         drivetrain.GoForward(DRIVE_RATE);
-        TMRArd_InitTimer(TRAVELLING_TIMER, TRAVELLING_TIME);
+        TMRArd_InitTimer(TRAVELLING_TIMER, TRAVELLING_TIME + 200);
         time = millis();
         isSeekingLine = true;
         break;
@@ -705,7 +744,7 @@ void Transition(State state)
         break;
 
     case SEEKING_EXCHANGE:
-        //TMRArd_InitTimer(SEEKING_TIMER, SEEKING_TIME);
+        TMRArd_InitTimer(SEEKING_TIMER, SEEKING_TIME);
         time = millis();
         if(startingSideOfServer == LEFT && targetExchange == FIVE) 
             drivetrain.SpinRight(SPIN_RATE);
@@ -728,6 +767,7 @@ void Transition(State state)
     case SEEKING_SERVER_2:
         SwitchSpin();
         time = millis();
+        TMRArd_InitTimer(SEEKING_TIMER, SEEKING_TIME);
         break;
 
     default: break;
