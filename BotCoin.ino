@@ -76,8 +76,8 @@ void loop()
     static State returnToState;
     static boolean isFirstRun = true;
     static int numCoinsMined = 0;
-    static boolean weKnowWhereWeAre = true;
-    static int startTime;
+    static unsigned long startTime;
+    static int numResetEndTimer = 0;
    // static int targetCoins;
 
     // Always do
@@ -99,15 +99,19 @@ void loop()
         sideServerBeacon.Clear();
         sideExchangeBeacon.Clear();
         TMRArd_InitTimer(CLEAR_BEACON_TIMER, BEACON_CLEAR_PERIOD);
-        startTime = millis();
     }
     
     if (TMRArd_IsTimerExpired(ENDGAME_TIMER))
     {
-        currState = WAITING_TO_END;
-        turntable.Stop();
-        drivetrain.Stop();
-        presser.Rest();
+        if(numResetEndTimer == 3) {
+          currState = WAITING_TO_END;
+          turntable.Stop();
+          drivetrain.Stop();
+          presser.Rest();
+        } else {
+          TMRArd_InitTimer(ENDGAME_TIMER, (unsigned long)(30 * ONE_SEC));   
+          numResetEndTimer++;
+        }
     }
 
     // State dependent
@@ -120,7 +124,7 @@ void loop()
             currState = SEEKING_SERVER;
             Transition(SEEKING_SERVER);
             // Bot to shut off automatically in 2 minutes
-            TMRArd_InitTimer(ENDGAME_TIMER, 120 * ONE_SEC);   
+            TMRArd_InitTimer(ENDGAME_TIMER, (unsigned long)(30 * ONE_SEC));   
         }
         break;
     case SEEKING_SERVER:
@@ -348,7 +352,7 @@ void loop()
         }
 
         // if 15 seconds left on the timer, dump everything in 8
-        if(millis() > 105*ONE_SEC) {
+        if((millis() - startTime) > (unsigned int)(105*ONE_SEC)) {
             currState = BACKING_UP;
             returnToState = SEEKING_EXCHANGE;
             Backup(2, BACKWARD);
