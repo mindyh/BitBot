@@ -289,6 +289,7 @@ void loop()
             currState = BACKING_UP;
             returnToState = TRAVELLING_TO_SERVER;
             Backup(1.5, BACKWARD);
+            isSeekingLine = true;
         }
         break;
 
@@ -322,7 +323,7 @@ void loop()
     case BUTTON_PRESSING:
         static int numPresses = 0;
         // mined 8 coins. Go find an exchange.
-        if (numPresses == 36 + 1)
+        if (numPresses == 6 + 1)
         {
             presser.Rest();
             numPresses = 0;
@@ -441,7 +442,7 @@ void loop()
 
             currState = DISPENSING;
             turntable.TurnCW(TURNTABLE_RATE);
-            TMRArd_InitTimer(DISPENSER_TIMER, 5 * ONE_SEC);
+            TMRArd_InitTimer(DISPENSER_TIMER, DISPENSING_TIME);
         }
         break;
 
@@ -459,27 +460,31 @@ void loop()
 
                 currState = BACKING_UP;
                 returnToState = SEEKING_SERVER;
-                Backup(1.5, FORWARD);
+                Backup(1, FORWARD);
+
+                // update current side of server
+                if((startingSideOfServer == LEFT && targetExchange == FIVE) ||
+                    startingSideOfServer == RIGHT && targetExchange == THREE)
+                    currSideOfServer = LEFT;
+                else 
+                    currSideOfServer = RIGHT;
+
+                // update target exchange
+                numRuns++;
+                targetExchange = targetOrder[numRuns];
             }
             // switch direction of dispenser every so often,
             // just in case.
             else
             {
                 if (turntable.GetLastDir() == CCW)
-                {
                     turntable.TurnCW(TURNTABLE_RATE);
-                }
                 else
-                {
                     turntable.TurnCCW(TURNTABLE_RATE);
-                }
-                TMRArd_InitTimer(DISPENSER_TIMER, 5 * ONE_SEC);
+
+                TMRArd_InitTimer(DISPENSER_TIMER, DISPENSING_TIME);
                 numTurns++;
             }
-
-            // update target exchange
-            numRuns++;
-            targetExchange = targetOrder[numRuns];
         }
         break;
     case WAITING_TO_END:
