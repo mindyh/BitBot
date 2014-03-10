@@ -17,7 +17,6 @@ class Turntable
     void TurnCW(int pwm, int turns);    // turns is the number of QUARTER turns
     void TurnCCW(int pwm, int turns);   // turns is the number of QUARTER turns
     void Stop();
-    bool IsClickerPressed();
     void Update();
     TurntableDir GetLastDir();
   private:
@@ -26,6 +25,7 @@ class Turntable
     int _clicker;
     int turnsToGo;
     TurntableDir lastDir;
+    bool IsClickerPressed();
 };
 
 #endif
