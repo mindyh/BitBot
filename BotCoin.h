@@ -54,24 +54,16 @@
 #define BRAKING_INTERVAL      ONE_SEC/4
 #define TRAVELLING_TIME       2.5*ONE_SEC 
 #define SPIN_RATE             150
-#define  SLOW_SPIN_RATE        130   
+#define SLOW_SPIN_RATE       130   
 #define SLOW_DRIVE_RATE       150
 #define DRIVE_RATE            180
-#define TURNTABLE_RATE        240
+#define TURNTABLE_RATE        250
 #define LINE_TRACKING_TIME    2*ONE_SEC
 #define ALIGNING_TIME         ONE_SEC*2
 #define DYNAMIC_BRAKE_TIME    ONE_SEC/2
 #define FAST_BRAKE_TIME       ONE_SEC
 #define SEEKING_TIME          4*ONE_SEC
 #define DISPENSING_TIME       4*ONE_SEC
-
-enum Direction {
-    FORWARD,
-    BACKWARD,
-    SPIN_LEFT,
-    SPIN_RIGHT,
-    SPIN
-};
 
 // states
 enum State {

@@ -35,6 +35,8 @@ static SideOfServer startingSideOfServer;
 static SideOfServer currSideOfServer;
 static int numRuns = 0;
 static TargetExchange targetExchange = targetOrder[numRuns];
+static int targetPresses[] = {15, 45};
+
     
 /*---- Main Program ---*/
 void setup()
@@ -124,7 +126,7 @@ void loop()
             {
                 currState = BRAKING;
                 returnToState = ALIGNING_WITH_SERVER;
-                Brake(SPIN, deltaT);
+                Brake(GetBrakeDir(), deltaT);
             }
             else
             {
@@ -161,7 +163,7 @@ void loop()
             {
                 currState = BRAKING;
                 returnToState = (currSideOfServer == LEFT) ? SEEKING_LEFT : SEEKING_RIGHT;
-                Brake(SPIN, deltaT);
+                Brake(GetBrakeDir(), deltaT);
             }
             else
             {
@@ -225,12 +227,12 @@ void loop()
             TMRArd_StopTimer(TRAVELLING_TIMER);
             TMRArd_ClearTimerExpired(TRAVELLING_TIMER);
             
-            int deltaT = millis() - time;
+            int deltaT = millis() - time + 100;
             if (deltaT > DYNAMIC_BRAKE_TIME)
             {
                 currState = BRAKING;
                 returnToState = ALIGNING_WITH_SERVER;
-                Brake(BACKWARD, deltaT);
+                Brake(GetBrakeDir(), deltaT);
             }
             else
             {
@@ -269,7 +271,7 @@ void loop()
                 currState = BRAKING;
                 returnToState = GOING_TO_SERVER_WALL;
 
-                Brake(SPIN, deltaT); 
+                Brake(GetBrakeDir(), deltaT);
 //                if(startingSideOfServer == LEFT) {
 //                    Brake(SPIN_LEFT, deltaT); // extra to compensate that spinning is faster than going straignt
 //                } else {
@@ -288,7 +290,7 @@ void loop()
         {
             currState = BACKING_UP;
             returnToState = TRAVELLING_TO_SERVER;
-            Backup(1.5, BACKWARD);
+            Backup(1, BACKWARD);
             isSeekingLine = true;
         }
         break;
@@ -323,10 +325,9 @@ void loop()
     case BUTTON_PRESSING:
         static int numPresses = 0;
         // mined 8 coins. Go find an exchange.
-        if (numPresses == 6 + 1)
+        if (numPresses == targetPresses[numRuns] + 1)
         {
             presser.Rest();
-            numPresses = 0;
 
             currState = BACKING_UP;
             returnToState = ALIGNING_SIDE_WITH_SERVER;
@@ -345,7 +346,7 @@ void loop()
            {
                currState = BRAKING;
                returnToState = ALIGNING_SIDE_WITH_EXCHANGE;
-               Brake(SPIN_LEFT, deltaT);
+               Brake(GetBrakeDir(), deltaT);
            }
            else
            {
@@ -364,20 +365,26 @@ void loop()
            {
                 currState = BRAKING;
                 returnToState = SEEKING_EXCHANGE;
-                if(CalculateDir() == FORWARD)
-                    Brake(BACKWARD, deltaT);
-                else 
-                    Brake(FORWARD, deltaT);
+                Brake(GetBrakeDir(), deltaT);
            }
            else
            {
                currState = SEEKING_EXCHANGE;
                Transition(SEEKING_EXCHANGE);
            }
-        }        
+        } else if (bumpers.IsFrontPressed() || bumpers.IsBackPressed()) {
+            // beacon was taken, go for another!
+            if(drivetrain.GetLastDir() == FORWARD) {
+                drivetrain.GoBackward(DRIVE_RATE);
+            } else {
+                drivetrain.GoForward(DRIVE_RATE);
+            }
+            TMRArd_InitTimer(TRAVELLING_TIMER, 5*ONE_SEC);
+        }     
         break;
 
     case SEEKING_EXCHANGE:
+        presser.Press();
         // found exchange, go towards it
         if (exchangeBeacon.IsFacingBeacon())
         {
@@ -387,11 +394,7 @@ void loop()
                 currState = BRAKING;
                 returnToState = TRAVELLING_TO_EXCHANGE;
                 
-                if((startingSideOfServer == LEFT && targetExchange == FIVE) || 
-                    (startingSideOfServer == RIGHT && targetExchange == THREE)) 
-                    Brake(SPIN_LEFT, deltaT);
-                else 
-                    Brake(SPIN_RIGHT, deltaT);
+                Brake(GetBrakeDir(), deltaT);
             }
             else // if it started facing the server
             {
@@ -400,6 +403,7 @@ void loop()
             }
             TMRArd_StopTimer(SEEKING_TIME);
             TMRArd_ClearTimerExpired(SEEKING_TIMER);
+            TMRArd_InitTimer(SEEKING_TIMER, ONE_SEC/4);
         }
         // cannot find any exchanges. Align with the server
         // and try agin
@@ -414,10 +418,11 @@ void loop()
     case TRAVELLING_TO_EXCHANGE:
         presser.Rest();
         // lost track of the exchange. Find another one.
-        if (!exchangeBeacon.IsFacingBeacon())
+        if (!exchangeBeacon.IsFacingBeacon() && TMRArd_IsTimerExpired(SEEKING_TIMER))
         {
             TMRArd_StopTimer(TRAVELLING_TIMER);
             TMRArd_ClearTimerExpired(TRAVELLING_TIMER);
+            TMRArd_ClearTimerExpired(SEEKING_TIMER);
 
             currState = SEEKING_EXCHANGE;
             Transition(SEEKING_EXCHANGE);
@@ -452,7 +457,7 @@ void loop()
         {
             //  After you're done dispensing, back up and 
             // mine more coins
-            if (numTurns == 1)
+            if (numTurns == 0)
             {
                 numTurns = 0;
                 turntable.Stop();
@@ -513,7 +518,7 @@ void loop()
             {
                 currState = BRAKING;
                 returnToState = ALIGNING_WITH_SERVER;
-                Brake(FORWARD, deltaT);
+                Brake(GetBrakeDir(), deltaT);
             }
             else
             {
@@ -535,6 +540,17 @@ void loop()
 }
 
 /*--------Module Functions -------------*/
+Direction GetBrakeDir() {
+    if(drivetrain.GetLastDir() == SPIN_LEFT) 
+        return SPIN_RIGHT;
+    else if(drivetrain.GetLastDir() == SPIN_RIGHT)
+        return SPIN_LEFT;
+    else if(drivetrain.GetLastDir() == FORWARD)
+        return BACKWARD;
+    else
+        return FORWARD;
+}
+
 
 Direction CalculateDir() {
     if(startingSideOfServer == LEFT && targetExchange == FIVE) {
