@@ -54,7 +54,7 @@
 #define BRAKING_INTERVAL      ONE_SEC/4
 #define TRAVELLING_TIME       2.5*ONE_SEC 
 #define SPIN_RATE             150
-#define SLOW_SPIN_RATE       130   
+#define SLOW_SPIN_RATE        130   
 #define SLOW_DRIVE_RATE       150
 #define DRIVE_RATE            180
 #define TURNTABLE_RATE        250
@@ -79,6 +79,7 @@ enum State {
     BUTTON_PRESSING,
     ALIGNING_SIDE_WITH_SERVER,
     ALIGNING_SIDE_WITH_EXCHANGE,
+    CROSSING_FIELD,
     SEEKING_EXCHANGE,
     SEEKING_SERVER_2,
     TRAVELLING_TO_EXCHANGE,

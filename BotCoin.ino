@@ -35,7 +35,8 @@ static SideOfServer startingSideOfServer;
 static SideOfServer currSideOfServer;
 static int numRuns = 0;
 static TargetExchange targetExchange = targetOrder[numRuns];
-static int targetPresses[] = {15, 45};
+static int targetPresses[] = {15, 45, 105};
+static float targetCoins[] = {5.0, 3.0, 8.0};
 
     
 /*---- Main Program ---*/
@@ -73,6 +74,8 @@ void loop()
     static State currState = WAITING_TO_START;
     static State returnToState;
     static boolean isFirstRun = true;
+    static int numCoinsMined = 0;
+   // static int targetCoins;
 
     // Always do
     if (TMRArd_IsTimerExpired(HEARTBEAT_TIMER))
@@ -272,11 +275,6 @@ void loop()
                 returnToState = GOING_TO_SERVER_WALL;
 
                 Brake(GetBrakeDir(), deltaT);
-//                if(startingSideOfServer == LEFT) {
-//                    Brake(SPIN_LEFT, deltaT); // extra to compensate that spinning is faster than going straignt
-//                } else {
-//                    Brake(SPIN_RIGHT, deltaT); // extra to compensate that spinning is faster than going straignt
-//                }
             }
             else
             {
@@ -323,8 +321,9 @@ void loop()
         break;
 
     case BUTTON_PRESSING:
+        //int targetPresses = (targetCoins + 1)*targetCoins/2;
         static int numPresses = 0;
-        // mined 8 coins. Go find an exchange.
+        // mined target number of coins. Go find an exchange.
         if (numPresses == targetPresses[numRuns] + 1)
         {
             presser.Rest();
@@ -336,6 +335,13 @@ void loop()
         else
         {
             PressButton(&numPresses);
+        }
+
+        // if 15 seconds left on the timer, dump everything in 8
+        if(millis() > 105*ONE_SEC) {
+            currState = BACKING_UP;
+            returnToState = SEEKING_EXCHANGE;
+            Backup(2, BACKWARD);
         }
         break;
 
@@ -372,15 +378,43 @@ void loop()
                currState = SEEKING_EXCHANGE;
                Transition(SEEKING_EXCHANGE);
            }
-        } else if (bumpers.IsFrontPressed() || bumpers.IsBackPressed()) {
-            // beacon was taken, go for another!
+            // 5 beacon was taken, go for 3
+        } else if ((targetExchange == FIVE) && 
+                    (bumpers.IsFrontPressed() || bumpers.IsBackPressed())) {
+           
+            numRuns++;
+            targetExchange = targetOrder[numRuns];
+            currState = CROSSING_FIELD;
             if(drivetrain.GetLastDir() == FORWARD) {
                 drivetrain.GoBackward(DRIVE_RATE);
             } else {
                 drivetrain.GoForward(DRIVE_RATE);
             }
-            TMRArd_InitTimer(TRAVELLING_TIMER, 5*ONE_SEC);
-        }     
+
+            // 3 beacon was taken, go for 8
+        } else if ((targetExchange == THREE) && 
+                    (bumpers.IsFrontPressed() || bumpers.IsBackPressed())) {
+
+            if(drivetrain.GetLastDir() == FORWARD) {
+                drivetrain.GoBackward(DRIVE_RATE);
+            } else {
+                drivetrain.GoForward(DRIVE_RATE);
+            }
+            numRuns++;
+            targetExchange = targetOrder[numRuns];
+        } 
+        break;
+
+    case CROSSING_FIELD:
+        if(sideServerBeacon.IsFacingBeacon()) {
+            currState = ALIGNING_SIDE_WITH_EXCHANGE;
+            currSideOfServer = (currSideOfServer == LEFT) ? RIGHT : LEFT;
+            TMRArd_InitTimer(TRAVELLING_TIMER, ONE_SEC);
+        } 
+        // else if (bumpers.IsFrontPressed()) {
+        //     // hit a wall, back up and 
+        //     curr
+        // }
         break;
 
     case SEEKING_EXCHANGE:
@@ -475,7 +509,7 @@ void loop()
                     currSideOfServer = RIGHT;
 
                 // update target exchange
-                numRuns++;
+                if(numRuns < 2) numRuns++;
                 targetExchange = targetOrder[numRuns];
             }
             // switch direction of dispenser every so often,
