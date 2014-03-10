@@ -21,7 +21,7 @@
 #define BUMPER_BL_PIN           10
 #define BUMPER_FL_PIN           12
 #define BUMPER_FR_PIN           12
-#define BUMPER_TURNTABLE_PIN    11
+#define TURNTABLE_CLICKER_PIN   11
 #define HEARTBEAT_LED           13
 
 // Analog Pins

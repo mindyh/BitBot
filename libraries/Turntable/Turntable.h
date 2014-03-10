@@ -11,19 +11,21 @@ enum TurntableDir {
 class Turntable
 {
   public:
-    Turntable(int enbl, int dir);
-    void TurnCW(int val);
-    void TurnCCW(int val);
+    Turntable(int enbl, int dir, int clicker);
+    void TurnCW(int pwm);
+    void TurnCCW(int pwm);
+    void TurnCW(int pwm, int turns);    // turns is the number of QUARTER turns
+    void TurnCCW(int pwm, int turns);   // turns is the number of QUARTER turns
     void Stop();
-    bool IsBumperPressed();
-    int GetCurrentSector();
+    void Update();
     TurntableDir GetLastDir();
   private:
     int _enbl;
     int _dir;
-    int _bumper;
-    int currSector;
+    int _clicker;
+    int turnsToGo;
     TurntableDir lastDir;
+    bool IsClickerPressed();
 };
 
 #endif

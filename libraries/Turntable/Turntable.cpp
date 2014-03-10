@@ -1,32 +1,43 @@
 #include "Arduino.h"
 #include "Turntable.h"
 
-Turntable::Turntable( int enbl, int dir)
+Turntable::Turntable( int enbl, int dir, int clicker)
 {
   _dir = dir;
   _enbl = enbl;
+  _clicker = clicker;
 
   lastDir = CW;
 
   pinMode(_dir, OUTPUT);
   pinMode(_enbl, OUTPUT);
-  //pinMode(_bumper, INPUT);
+  pinMode(_clicker, INPUT);
   Stop();
 }
 
 /*-----Turntable Functions -----*/
-void Turntable::TurnCW(int val) {
-    digitalWrite(_dir, LOW);
-    analogWrite(_enbl, val);
+void Turntable::TurnCW(int pwm) {
+  digitalWrite(_dir, LOW);
+  analogWrite(_enbl, pwm);
 
-    lastDir = CW;
+  lastDir = CW;
 }
 
-void Turntable::TurnCCW(int val) {
-    digitalWrite(_dir, HIGH);
-    analogWrite(_enbl, val);
+void Turntable::TurnCCW(int pwm) {
+  digitalWrite(_dir, HIGH);
+  analogWrite(_enbl, pwm);
 
-    lastDir = CCW;
+  lastDir = CCW;
+}
+
+void Turntable::TurnCW(int pwm, int turns) {
+  turnsToGo = turns;
+  TurnCW(pwm);
+}
+
+void Turntable::TurnCCW(int pwm, int turns) {
+  turnsToGo = turns;
+  TurnCCW(pwm);
 }
 
 TurntableDir Turntable::GetLastDir() {
@@ -34,13 +45,28 @@ TurntableDir Turntable::GetLastDir() {
 }
 
 void Turntable::Stop() {
-    analogWrite(_enbl, 0);
+  analogWrite(_enbl, 0);
 }
 
-bool Turntable::IsBumperPressed() {
-
+bool Turntable::IsClickerPressed() {
+  return digitalRead(_clicker) == HIGH;
 }
     
-int Turntable::GetCurrentSector(){
-    
+void Turntable::Update() {
+  static bool clickerState = IsClickerPressed();
+  static const bool initialState = clickerState;
+
+  int currState;
+  if ((currState = IsClickerPressed()) != clickerState) {
+    clickerState = currState;
+
+    if (clickerState == initialState) { 
+      turnsToGo--;
+    }
+
+    if (turnsToGo == 0) {
+      Stop();
+    }
+  }
+
 }
